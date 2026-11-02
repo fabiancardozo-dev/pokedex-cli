@@ -7,11 +7,40 @@ import (
 	"strings"
 )
 
+const (
+	reset  = "\033[0m"
+	bold   = "\033[1m"
+	red    = "\033[31m"
+	blue   = "\033[94m"
+	yellow = "\033[93m"
+)
+
+type cliCommand struct {
+	name        string
+	description string
+	callback    func() error
+}
+
+func getCommand() map[string]cliCommand {
+	return map[string]cliCommand{
+		"help": {
+			name:        "help",
+			description: "Displays a help message",
+			callback:    commandHelp,
+		},
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
+	}
+}
+
 func startRepl() {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		fmt.Print("Pokedex > ")
+		fmt.Printf("%s%sPokedex > %s", bold, blue, reset)
 
 		scanner.Scan()
 		words := cleanInput(scanner.Text())
@@ -20,11 +49,16 @@ func startRepl() {
 			continue
 		}
 
-		firsWord := words[0]
+		command, ok := getCommand()[words[0]]
 
-		fmt.Printf("Your command was: %s\n", firsWord)
+		if !ok {
+			fmt.Printf("%s%sUnknown command, type 'help' to see all the commands\n", bold, yellow)
+			continue
+		}
 
+		command.callback()
 	}
+
 }
 
 func cleanInput(text string) []string {

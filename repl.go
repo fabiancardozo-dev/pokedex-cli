@@ -23,6 +23,8 @@ type cliCommand struct {
 
 type config struct {
 	commandRegistry map[string]cliCommand
+	currentURL      string
+	previousURL     string
 }
 
 func getCommand() map[string]cliCommand {
@@ -31,6 +33,11 @@ func getCommand() map[string]cliCommand {
 			name:        "help",
 			description: "Displays a help message",
 			callback:    commandHelp,
+		},
+		"map": {
+			name:        "map",
+			description: "Displays 20 locations, Each subsequent call display the next 20 locations",
+			callback:    commandMap,
 		},
 		"exit": {
 			name:        "exit",
@@ -60,7 +67,10 @@ func startRepl(cfg *config) {
 			continue
 		}
 
-		command.callback(cfg)
+		err := command.callback(cfg)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
 }

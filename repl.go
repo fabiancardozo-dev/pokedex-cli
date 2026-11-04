@@ -2,7 +2,11 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -23,8 +27,20 @@ type cliCommand struct {
 
 type config struct {
 	commandRegistry map[string]cliCommand
-	currentURL      string
-	previousURL     string
+	nextURL         *string
+	previousURL     *string
+}
+
+type Location struct {
+	Count    int       `json:"count"`
+	Next     *string   `json:"next"`
+	Previous *string   `json:"previous"`
+	Results  []Results `json:"results"`
+}
+
+type Results struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 func getCommand() map[string]cliCommand {
@@ -38,6 +54,11 @@ func getCommand() map[string]cliCommand {
 			name:        "map",
 			description: "Displays 20 locations, Each subsequent call display the next 20 locations",
 			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays the previous 20 locations",
+			callback:    commandMapB,
 		},
 		"exit": {
 			name:        "exit",
@@ -79,4 +100,28 @@ func cleanInput(text string) []string {
 	lowerCaseText := strings.ToLower(text)
 	result := strings.Fields(lowerCaseText) // Split the string around white spaces
 	return result
+}
+
+func getLocations(url *string) (Location, error) {
+	res, err := http.Get(*url)
+	if err != nil {
+		return Location{}, err
+	}
+
+	body, err := io.ReadAll(res.Body)
+	defer res.Body.Close()
+	if res.StatusCode > 299 {
+		return Location{}, errors.New("Request failed with status code: " + string(res.StatusCode))
+	}
+	if err != nil {
+		return Location{}, err
+	}
+
+	var locs Location
+	err = json.Unmarshal(body, &locs)
+	if err != nil {
+		return Location{}, err
+	}
+
+	return locs, nil
 }

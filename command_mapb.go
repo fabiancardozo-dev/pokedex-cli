@@ -1,24 +1,26 @@
 package main
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 func commandMapB(cfg *config) error {
 	if cfg.previousURL == nil {
-		fmt.Println("you're on the first page")
-		return nil
+		return errors.New("you're on the first page")
 	}
 
-	locations, err := getLocations(cfg.previousURL)
+	respLocations, err := cfg.pokeapiClient.ListLocations(cfg.previousURL)
 	if err != nil {
 		return err
 	}
 
-	for _, location := range locations.Results {
-		fmt.Println(location.Name)
-	}
+	cfg.nextURL = respLocations.Next
+	cfg.previousURL = respLocations.Previous
 
-	cfg.nextURL = locations.Next
-	cfg.previousURL = locations.Previous
+	for _, loc := range respLocations.Results {
+		fmt.Println(loc.Name)
+	}
 
 	return nil
 }

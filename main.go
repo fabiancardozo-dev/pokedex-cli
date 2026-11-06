@@ -1,12 +1,16 @@
 package main
 
-func main() {
-	baseUrl := "https://pokeapi.co/api/v2/location-area"
+import (
+	"time"
 
+	"github.com/fabiancardozo-dev/pokedex-cli/internals/pokeapi"
+)
+
+func main() {
+	pokeClient := pokeapi.NewClient(5 * time.Second)
 	cfg := config{
 		commandRegistry: getCommand(),
-		nextURL:         &baseUrl,
-		previousURL:     nil,
+		pokeapiClient:   pokeClient,
 	}
 
 	startRepl(&cfg)

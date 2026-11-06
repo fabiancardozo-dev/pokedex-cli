@@ -2,13 +2,11 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
+
+	"github.com/fabiancardozo-dev/pokedex-cli/internals/pokeapi"
 )
 
 const (
@@ -27,45 +25,9 @@ type cliCommand struct {
 
 type config struct {
 	commandRegistry map[string]cliCommand
+	pokeapiClient   pokeapi.Client
 	nextURL         *string
 	previousURL     *string
-}
-
-type Location struct {
-	Count    int       `json:"count"`
-	Next     *string   `json:"next"`
-	Previous *string   `json:"previous"`
-	Results  []Results `json:"results"`
-}
-
-type Results struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
-}
-
-func getCommand() map[string]cliCommand {
-	return map[string]cliCommand{
-		"help": {
-			name:        "help",
-			description: "Displays a help message",
-			callback:    commandHelp,
-		},
-		"map": {
-			name:        "map",
-			description: "Displays 20 locations, Each subsequent call display the next 20 locations",
-			callback:    commandMap,
-		},
-		"mapb": {
-			name:        "mapb",
-			description: "Displays the previous 20 locations",
-			callback:    commandMapB,
-		},
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
-		},
-	}
 }
 
 func startRepl(cfg *config) {
@@ -102,26 +64,27 @@ func cleanInput(text string) []string {
 	return result
 }
 
-func getLocations(url *string) (Location, error) {
-	res, err := http.Get(*url)
-	if err != nil {
-		return Location{}, err
+func getCommand() map[string]cliCommand {
+	return map[string]cliCommand{
+		"help": {
+			name:        "help",
+			description: "Displays a help message",
+			callback:    commandHelp,
+		},
+		"map": {
+			name:        "map",
+			description: "Displays 20 locations, Each subsequent call display the next 20 locations",
+			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays the previous 20 locations",
+			callback:    commandMapB,
+		},
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
 	}
-
-	body, err := io.ReadAll(res.Body)
-	defer res.Body.Close()
-	if res.StatusCode > 299 {
-		return Location{}, errors.New("Request failed with status code: " + string(res.StatusCode))
-	}
-	if err != nil {
-		return Location{}, err
-	}
-
-	var locs Location
-	err = json.Unmarshal(body, &locs)
-	if err != nil {
-		return Location{}, err
-	}
-
-	return locs, nil
 }
